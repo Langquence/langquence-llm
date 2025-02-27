@@ -1,47 +1,54 @@
 import logging
 import os
 import sys
+from logging.handlers import TimedRotatingFileHandler
+from datetime import datetime
 
-# 로그 디렉토리 생성
-log_dir = 'logs'
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
+# 기본 설정 함수
+def setup_logger():
+    # 로그 디렉토리 생성
+    log_dir = 'logs'
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
 
-# 로거 설정
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+    # 로그 포맷 설정
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-# 이미 핸들러가 있는 경우 제거 (중복 로깅 방지)
-if logger.handlers:
-    logger.handlers = []
+    # 콘솔 출력용 핸들러
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(formatter)
+    stream_handler.setLevel(logging.INFO)
 
-# 로그 포맷 설정
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # 현재 날짜로 로그 파일 이름 생성
+    current_date = datetime.now().strftime('%Y-%m-%d')
+    log_file = os.path.join(log_dir, f'app_{current_date}.log')
 
-# 콘솔 출력용 핸들러
-stream_handler = logging.StreamHandler(sys.stdout)
-stream_handler.setFormatter(formatter)
-stream_handler.setLevel(logging.INFO)  # 콘솔에는 INFO 레벨 이상만 출력
-logger.addHandler(stream_handler)
+    # 날짜별 로그 파일 핸들러
+    file_handler = TimedRotatingFileHandler(
+        log_file,
+        when='midnight',
+        interval=1,
+        backupCount=30,
+        encoding='utf-8'
+    )
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.suffix = '%Y-%m-%d'
 
-# 파일 출력용 핸들러
-file_handler = logging.FileHandler(os.path.join(log_dir, 'app.log'))
-file_handler.setFormatter(formatter)
-file_handler.setLevel(logging.DEBUG)  # 파일에는 모든 로그 저장
-logger.addHandler(file_handler)
+    # 루트 로거 설정
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+    
+    # 이미 핸들러가 있는 경우 제거
+    if root_logger.handlers:
+        root_logger.handlers = []
+        
+    root_logger.addHandler(stream_handler)
+    root_logger.addHandler(file_handler)
 
-# 간편한 사용을 위한 래퍼 함수
-def debug(msg, *args, **kwargs):
-    logger.debug(msg, *args, **kwargs)
+# 초기 설정 실행
+setup_logger()
 
-def info(msg, *args, **kwargs):
-    logger.info(msg, *args, **kwargs)
-
-def warning(msg, *args, **kwargs):
-    logger.warning(msg, *args, **kwargs)
-
-def error(msg, *args, **kwargs):
-    logger.error(msg, *args, **kwargs)
-
-def critical(msg, *args, **kwargs):
-    logger.critical(msg, *args, **kwargs)
+# 모듈별 로거를 가져오는 함수
+def get_logger(name):
+    return logging.getLogger(name)
