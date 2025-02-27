@@ -1,10 +1,12 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
-from utils.log import info, debug, error
+from utils.log import get_logger
+
+logger = get_logger(__name__)
 
 class EnglishCorrectionModel:
     def __init__(self, model_name="Qwen/Qwen2.5-1.5B-Instruct"):
-        info(f"Loading model: {model_name}")
+        logger.info(f"Loading model: {model_name}")
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(
@@ -12,8 +14,8 @@ class EnglishCorrectionModel:
             torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
             device_map="auto"
         )
-        
-        info("Model loaded successfully")
+
+        logger.info("Model loaded successfully")
         
     def correct_text(self, input_text, max_new_tokens=512):
         """
